@@ -36,11 +36,6 @@ public interface ICraftingPattern {
     boolean isOredict();
 
     /**
-     * @return true if the crafting pattern may block crafting step
-     */
-    boolean isBlocking();
-
-    /**
      * @return the inputs, can contain nulls
      */
     List<ItemStack> getInputs();

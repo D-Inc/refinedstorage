@@ -34,8 +34,4 @@ public interface ICraftingPatternContainer {
      * @return the position of this container
      */
     BlockPos getPosition();
-
-    boolean isBlocked();
-
-    void setBlocked(boolean value);
 }
