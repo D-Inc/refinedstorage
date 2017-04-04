@@ -20,6 +20,7 @@ import net.minecraftforge.items.IItemHandler;
 
 public class TileProcessingPatternEncoder extends TileBase {
     private static final String NBT_OREDICT_PATTERN = "OredictPattern";
+    private static final String NBT_BLOCKING_PATTERN = "BlockingPattern";
 
     public static final TileDataParameter<Boolean> OREDICT_PATTERN = new TileDataParameter<>(DataSerializers.BOOLEAN, false, new ITileDataProducer<Boolean, TileProcessingPatternEncoder>() {
         @Override
@@ -39,13 +40,33 @@ public class TileProcessingPatternEncoder extends TileBase {
         }
     });
 
-    private ItemHandlerBasic patterns = new ItemHandlerBasic(2, this, new ItemValidatorBasic(RSItems.PATTERN));
-    private ItemHandlerBasic configuration = new ItemHandlerBasic(9 * 2, this);
+    public static final TileDataParameter<Boolean> BLOCKING_TASK_PATTERN = new TileDataParameter<>(DataSerializers.BOOLEAN, false, new ITileDataProducer<Boolean, TileProcessingPatternEncoder>() {
+        @Override
+        public Boolean getValue(TileProcessingPatternEncoder tile) {
+            return tile.blockingTask;
+        }
+    }, new ITileDataConsumer<Boolean, TileProcessingPatternEncoder>() {
+        @Override
+        public void setValue(TileProcessingPatternEncoder tile, Boolean value) {
+            tile.blockingTask = value;
+
+            tile.markDirty();
+        }
+    }, parameter -> {
+        if (Minecraft.getMinecraft().currentScreen instanceof GuiProcessingPatternEncoder) {
+            ((GuiProcessingPatternEncoder) Minecraft.getMinecraft().currentScreen).updateBlockingPattern(parameter.getValue());
+        }
+    });
+
+    private ItemHandlerBasic patterns = new ItemHandlerBasic(2, new ItemHandlerListenerTile(this), new ItemValidatorBasic(RSItems.PATTERN));
+    private ItemHandlerBasic configuration = new ItemHandlerBasic(9 * 2, new ItemHandlerListenerTile(this));
 
     private boolean oredictPattern;
+    private boolean blockingTask = false;
 
     public TileProcessingPatternEncoder() {
         dataManager.addWatchedParameter(OREDICT_PATTERN);
+        dataManager.addWatchedParameter(BLOCKING_TASK_PATTERN);
     }
 
     @Override
@@ -56,6 +77,7 @@ public class TileProcessingPatternEncoder extends TileBase {
         RSUtils.writeItems(configuration, 1, tag);
 
         tag.setBoolean(NBT_OREDICT_PATTERN, oredictPattern);
+        tag.setBoolean(NBT_BLOCKING_PATTERN, blockingTask);
 
         return tag;
     }
@@ -70,6 +92,10 @@ public class TileProcessingPatternEncoder extends TileBase {
         if (tag.hasKey(NBT_OREDICT_PATTERN)) {
             oredictPattern = tag.getBoolean(NBT_OREDICT_PATTERN);
         }
+
+        if (tag.hasKey(NBT_BLOCKING_PATTERN)) {
+            blockingTask = tag.getBoolean(NBT_BLOCKING_PATTERN);
+        }
     }
 
     public void onCreatePattern() {
@@ -77,6 +103,7 @@ public class TileProcessingPatternEncoder extends TileBase {
             ItemStack pattern = new ItemStack(RSItems.PATTERN);
 
             ItemPattern.setOredict(pattern, oredictPattern);
+            ItemPattern.setBlocking(pattern, blockingTask);
 
             for (int i = 0; i < 18; ++i) {
                 if (configuration.getStackInSlot(i) != null) {
